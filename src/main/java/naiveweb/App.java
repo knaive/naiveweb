@@ -37,14 +37,14 @@ public class App
                     boolean requestDone;
                     do {
                         line = in.readLine();
-                        // \r\n at the end of line were trimed by underlying lib
+                        // \r\n at the end of line were trimmed by underlying lib
                         System.out.println(line);
                         if ("".equals(line) || line == null) {
                             Logger.info("***Header ends here");
                             break;
                         }
                         
-                        System.out.println("Hex: " + Arrays.toString(line.getBytes()));
+                        // Logger.info("Hex: " + Arrays.toString(line.getBytes()));
                         requestDone = parser.parseRequestMessage(line);
                     } while (!requestDone);
                     parser.dumpRequestInfo();

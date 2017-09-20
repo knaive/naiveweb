@@ -2,7 +2,6 @@ package naiveweb;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.file.Path;
 import java.util.List;
 
 public class HttpResponse {
@@ -31,6 +30,15 @@ public class HttpResponse {
         writer.write(body);
         writer.flush();
     }
+    private String getBasePath(String path) {
+        String base = null;
+        String[] parts = path.split("/");
+        if(parts.length > 0) {
+            base = parts[parts.length-1];
+            if(!path.endsWith(base)) base = base + "/";
+        }
+        return base;
+    }
     private String createBody() throws IOException {
         if (!fileServer.exists()) {
             throw new IOException("File not found");
@@ -39,19 +47,22 @@ public class HttpResponse {
             return fileServer.getRegularFileContents();
         }
 
-        List<Path> files = fileServer.getDirectoryContents();
+        List<String> filenames = fileServer.getDirectoryContents();
         StringBuilder sb = new StringBuilder(4096);
-        sb.append(String.format("<div>File list: </div>"));
-        for(int i=0; i<files.size(); i++) {
-            Path file = files.get(i);
-            int count = file.getNameCount();
-            String link = file.toString();
-            String displayName = "..";
-            if (i != 0) {
-                displayName = file.subpath(count-1, count).toString();
+        sb.append("<ul>");
+        String link, name;
+        for(int i=0; i<filenames.size(); i++) {
+            link = filenames.get(i);
+            if (link != null) {
+                name = "..";
+                if (i > 0) {
+                    name = getBasePath(link);
+                    if(!link.endsWith(name)) name = name + "/";
+                }
+                sb.append(String.format("<li><a href='%s'>%s</a></li>\n", link, name));
             }
-            sb.append(String.format("<div><a href='%s'>%s</a></div>\n", link, displayName));
         }
+        sb.append("</ul>");
         return sb.toString();
     }
     public void respond() throws IOException {

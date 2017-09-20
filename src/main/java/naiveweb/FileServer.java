@@ -8,7 +8,7 @@ import java.util.List;
 
 public class FileServer {
     private static final String defaultRoot = System.getProperty("user.dir");
-    private String rootDir = "./";
+    private String rootDir;
     private Path root;
     private Path path;
     private File file;
@@ -38,13 +38,19 @@ public class FileServer {
         }
     }
 
-    private Path toVirtualPath(Path path) {
-        if (!path.startsWith(this.rootDir)) return path;
-        if (this.root.compareTo(path) == 0) return Paths.get("/");
+    private String toVirtualPath(Path path) {
+        if (!path.startsWith(this.rootDir)) return null;
+        if(this.root.compareTo(path) == 0) return "/";
 
-        int count = this.root.getNameCount();
-        int totalCount = path.getNameCount();
-        return path.subpath(count, totalCount);
+        String suffix = path.toFile().isDirectory() ? "/" : "";
+
+//        int count = this.root.getNameCount();
+//        int totalCount = path.getNameCount();
+//        return path.subpath(count, totalCount);
+//        return path.getName(totalCount - 1);
+        Path virtualPath = root.relativize(path);
+        String unixStylePath = virtualPath.toString().replaceAll("\\\\", "/");
+        return "/" + unixStylePath + suffix;
     }
 
     public boolean exists() {
@@ -56,17 +62,20 @@ public class FileServer {
     public boolean isRegFile() {
         return exists() && this.file.isFile();
     }
-    public List<Path> getDirectoryContents() throws IOException {
+    public List<String> getDirectoryContents() throws IOException {
         if (isDirectory()) {
-            List<Path> files = new ArrayList<Path>();
+            List<String> files = new ArrayList<String>();
             // add parent dir as the first element
             Path parentPath = this.path.getParent();
-            files.add(toVirtualPath(parentPath));
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+            String pathName = toVirtualPath(parentPath);
+            files.add(pathName);
+
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(this.path)) {
+                String name;
                 for (Path path: stream) {
-                    Path virtualPath = toVirtualPath(path);
-                    System.out.println(virtualPath.toString());
-                    files.add(virtualPath);
+                    name = toVirtualPath(path);
+                    System.out.println(name);
+                    files.add(name);
                 }
             }
             return files;
