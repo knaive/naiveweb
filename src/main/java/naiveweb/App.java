@@ -5,7 +5,6 @@ package naiveweb;
  */
 import java.net.*;
 import java.io.*;
-import java.util.*;
 
 
 public class App
@@ -30,24 +29,23 @@ public class App
                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 ) {
-                    Logger.info("***A connection established\n");
+                    Logger.info("***A connection established");
 
                     HttpParser parser = new HttpParser();
                     String line;
                     boolean requestDone;
                     do {
-                        line = in.readLine();
                         // \r\n at the end of line were trimmed by underlying lib
-                        System.out.println(line);
-                        if ("".equals(line) || line == null) {
-                            Logger.info("***Header ends here");
-                            break;
-                        }
-                        
+                        line = in.readLine();
+                        // Logger.info(line);
+
                         // Logger.info("Hex: " + Arrays.toString(line.getBytes()));
                         requestDone = parser.parseRequestMessage(line);
                     } while (!requestDone);
+
+                    Logger.info("***Header ends here");
                     parser.dumpRequestInfo();
+
                     HttpResponse response = new HttpResponse(out, parser.getUri());
                     response.respond();
                 } catch (IOException e) {

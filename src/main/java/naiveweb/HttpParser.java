@@ -27,6 +27,7 @@ public class HttpParser {
     }
     public void dumpRequestInfo() {
         StringBuilder info = new StringBuilder(4096);
+        info.append("\n**************************************\n");
         info.append(String.format("method: %s\n", method));
         info.append(String.format("uri: %s\n", uri));
         info.append(String.format("http: %s\n", httpVersion));
@@ -40,9 +41,8 @@ public class HttpParser {
             key = iterator.next();
             info.append(String.format("%s: %s\n", key, extraHeaders.get(key)));
         }
-        System.out.println("\n**************************************");
-        System.out.println(info);
-        System.out.println("**************************************\n");
+        info.append("**************************************\n");
+        Logger.info(info.toString());
     }
     public HttpParser() {
         this.contentLength = 0;
@@ -52,6 +52,7 @@ public class HttpParser {
         this.body = new StringBuilder(4096);
     }
     public boolean parseRequestMessage(String line) throws Exception {
+        if (line == null) return true;
         switch (this.type) {
             case STARTLINE:
                 if(parseStartLine(line)) this.type = HttpRequestLineType.HEADER;

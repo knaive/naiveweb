@@ -5,12 +5,16 @@ import java.io.Writer;
 import java.util.List;
 
 public class HttpResponse {
-    private FileServer fileServer;
     private Writer writer;
+    private String uri;
+    private String contentType;
+
     public HttpResponse(Writer writer, String uri) {
         this.writer = writer;
-        this.fileServer = new FileServer(uri);
+        this.contentType = "text/plain";
+        this.uri = uri;
     }
+
     private void doRespond(int status, String body) throws IOException {
         String msg;
         switch (status) {
@@ -24,54 +28,52 @@ public class HttpResponse {
                 msg = "Invalid Request";
         }
         writer.write(String.format("HTTP/1.1 %d %s\r\n", status, msg));
-        writer.write("Content-Type: text/html\r\n");
+        writer.write(String.format("Content-Type: %s\r\n", this.contentType));
         writer.write("Content-Length: " + body.getBytes().length + "\r\n");
         writer.write("\r\n");
         writer.write(body);
         writer.flush();
     }
-    private String getBasePath(String path) {
-        String base = null;
-        String[] parts = path.split("/");
-        if(parts.length > 0) {
-            base = parts[parts.length-1];
-            if(!path.endsWith(base)) base = base + "/";
-        }
-        return base;
-    }
-    private String createBody() throws IOException {
-        if (!fileServer.exists()) {
-            throw new IOException("File not found");
-        }
-        if (fileServer.isRegFile()) {
-            return fileServer.getRegularFileContents();
+
+    private String createBody(WebFile file) throws Exception {
+        if (!file.isDirectory()) {
+            this.contentType = file.getMIME();
+            return file.getContents();
         }
 
-        List<String> filenames = fileServer.getDirectoryContents();
-        StringBuilder sb = new StringBuilder(4096);
-        sb.append("<ul>");
-        String link, name;
-        for(int i=0; i<filenames.size(); i++) {
-            link = filenames.get(i);
-            if (link != null) {
-                name = "..";
-                if (i > 0) {
-                    name = getBasePath(link);
-                    if(!link.endsWith(name)) name = name + "/";
-                }
-                sb.append(String.format("<li><a href='%s'>%s</a></li>\n", link, name));
-            }
+        this.contentType = "text/html";
+
+        WebFile[] files = file.list();
+
+        // if this folder is empty
+
+        StringBuilder body = new StringBuilder();
+        body.append("<ul>");
+        WebFile parent = file.getParent();
+        if (parent != null) {
+            body.append(String.format("<li><a href='%s'>..Back to parent directory</a></li>\n", parent.getUrl()));
         }
-        sb.append("</ul>");
-        return sb.toString();
+        if (files.length == 0) {
+            body.append("<li>No files in this directory.</li>\n");
+        }
+        for(WebFile f : files) {
+            String link = f.getUrl();
+            String name = f.getName();
+            if (f.isDirectory()) name = name + "/";
+            body.append(String.format("<li><a href='%s'>%s</a></li>\n", link, name));
+        }
+        body.append("</ul>");
+        return body.toString();
     }
-    public void respond() throws IOException {
-        boolean valid = fileServer.exists();
-        if (!valid) {
+
+    public void respond() throws Exception {
+        WebFile file = FileServer.getFile(uri);
+        if (file == null) {
+            this.contentType = "text/html";
             doRespond(404, "<h1>Not Found</h1>");
             return;
         }
-        String body = createBody();
+        String body = createBody(file);
         doRespond(200, body);
     }
 }
