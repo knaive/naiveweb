@@ -7,7 +7,7 @@ import java.util.Map;
 public class WebFile {
     private static final Map<String, String> mime;
     private File file;
-    private String url;
+    private String uri;
     private String name;
 
     static {
@@ -28,7 +28,7 @@ public class WebFile {
     public WebFile(File file, String url) throws Exception {
         if (file==null || url==null) throw new Exception("Parameter can not be null");
         this.file = file;
-        this.url = url.replaceAll("/+", "/");
+        this.uri = url.replaceAll("/+", "/");
         this.name = this.file.getName();
     }
 
@@ -36,8 +36,8 @@ public class WebFile {
         return this.file.length();
     }
 
-    public String getUrl() {
-        return url;
+    public String getUri() {
+        return uri;
     }
 
     public String getName() {
@@ -74,14 +74,14 @@ public class WebFile {
         for(int i=0; i<filenames.length; i++) {
             name = filenames[i];
             file = new File(path, name);
-            url = PathUtil.join(getUrl(), name);
+            url = PathUtil.join(getUri(), name);
             webfiles[i] = new WebFile(file, url);
         }
         return webfiles;
     }
 
     public WebFile getParent() throws Exception {
-        String parent = PathUtil.getParent(this.getUrl());
+        String parent = PathUtil.getParent(this.getUri());
         return FileServer.getFile(parent);
     }
 

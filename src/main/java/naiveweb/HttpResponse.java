@@ -51,13 +51,13 @@ public class HttpResponse {
         body.append("<ul>");
         WebFile parent = file.getParent();
         if (parent != null) {
-            body.append(String.format("<li><a href='%s'>..Back to parent directory</a></li>\n", parent.getUrl()));
+            body.append(String.format("<li><a href='%s'>..Back to parent directory</a></li>\n", parent.getUri()));
         }
         if (files.length == 0) {
             body.append("<li>No files in this directory.</li>\n");
         }
         for(WebFile f : files) {
-            String link = f.getUrl();
+            String link = f.getUri();
             String name = f.getName();
             if (f.isDirectory()) name = name + "/";
             body.append(String.format("<li><a href='%s'>%s</a></li>\n", link, name));
@@ -66,11 +66,18 @@ public class HttpResponse {
         return body.toString();
     }
 
+    private void respond404() throws IOException {
+        writer.write("HTTP/1.1 301 Found\r\n");
+        writer.write("Content-Type: text/html\r\n");
+        writer.write("Location: http://localhost:8080/404.html\r\n");
+        writer.write("\r\n");
+        writer.flush();
+    }
+
     public void respond() throws Exception {
         WebFile file = FileServer.getFile(uri);
         if (file == null) {
-            this.contentType = "text/html";
-            doRespond(404, "<h1>Not Found</h1>");
+            respond404();
             return;
         }
         String body = createBody(file);
